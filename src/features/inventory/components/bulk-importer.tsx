@@ -425,7 +425,10 @@ export function BulkImporter({ isOpen, onClose }: BulkImporterProps) {
       <div onClick={onClose} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       {/* Dialog container */}
-      <div className="relative z-10 w-full max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-950 text-white shadow-2xl overflow-hidden max-h-[calc(100vh-2rem)] md:max-h-[85vh] flex flex-col">
+      <div 
+        className="relative z-10 w-full max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-950 text-white shadow-2xl overflow-hidden flex flex-col"
+        style={{ maxHeight: "calc(100vh - 2rem)" }}
+      >
         {/* Header */}
         <div className="border-b border-zinc-800 px-4 py-3 md:px-6 md:py-4 flex items-center justify-between shrink-0">
           <div>
@@ -446,7 +449,10 @@ export function BulkImporter({ isOpen, onClose }: BulkImporterProps) {
         </div>
 
         {/* Scrollable Wizard Steps */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 min-h-0">
+        <div 
+          className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6"
+          style={{ minHeight: 0 }}
+        >
           {errorMessage && (
             <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
               {errorMessage}
@@ -514,7 +520,10 @@ export function BulkImporter({ isOpen, onClose }: BulkImporterProps) {
                 <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">
                   Mapeo de Columnas de Excel / CSV
                 </span>
-                <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-auto max-h-[35vh]">
+                <div 
+                  className="rounded-xl border border-zinc-800 bg-zinc-950"
+                  style={{ maxHeight: "250px", overflowY: "auto" }}
+                >
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr className="border-b border-zinc-800 bg-zinc-900/50 text-zinc-400 uppercase font-bold">
@@ -576,7 +585,10 @@ export function BulkImporter({ isOpen, onClose }: BulkImporterProps) {
                   <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">
                     Marcas en el CSV ({detectedBrands.length})
                   </span>
-                  <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-auto max-h-[25vh]">
+                  <div 
+                    className="rounded-xl border border-zinc-800 bg-zinc-950"
+                    style={{ maxHeight: "180px", overflowY: "auto" }}
+                  >
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="border-b border-zinc-800 bg-zinc-900/50 text-zinc-400 uppercase font-bold">
@@ -627,7 +639,10 @@ export function BulkImporter({ isOpen, onClose }: BulkImporterProps) {
                   <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">
                     Rubros / Familias en el CSV ({detectedFamilies.length})
                   </span>
-                  <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-auto max-h-[25vh]">
+                  <div 
+                    className="rounded-xl border border-zinc-800 bg-zinc-950"
+                    style={{ maxHeight: "180px", overflowY: "auto" }}
+                  >
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="border-b border-zinc-800 bg-zinc-900/50 text-zinc-400 uppercase font-bold">
@@ -681,7 +696,10 @@ export function BulkImporter({ isOpen, onClose }: BulkImporterProps) {
               <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">
                 Vista Previa de Importación ({parsedRows.length} repuestos listos)
               </span>
-              <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-auto max-h-[40vh]">
+              <div 
+                className="rounded-xl border border-zinc-800 bg-zinc-950"
+                style={{ maxHeight: "280px", overflowY: "auto" }}
+              >
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="border-b border-zinc-800 bg-zinc-900/50 text-zinc-400 uppercase font-bold sticky top-0">
