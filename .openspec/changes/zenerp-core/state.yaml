@@ -1,0 +1,11 @@
+change: zenerp-core
+current_phase: archive
+completed_phases:
+  - proposal
+  - spec
+  - design
+  - tasks
+  - apply
+  - verify
+  - archive
+next_phase: null

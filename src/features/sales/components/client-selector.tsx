@@ -1,0 +1,298 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { User, Building2, ChevronDown, Check, UserPlus, Loader2 } from "lucide-react";
+import { useSalesStore } from "../store/use-sales-store";
+import { toast } from "sonner";
+import { getSupabaseClient } from "@/core/api/supabase";
+
+export function ClientSelector() {
+  const salesStore = useSalesStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const [dniInput, setDniInput] = useState("");
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [registerName, setRegisterName] = useState("");
+  const [registerAddress, setRegisterAddress] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  useEffect(() => {
+    salesStore.fetchCustomers();
+  }, []);
+
+  // Automatically adjust registration form if input changes
+  useEffect(() => {
+    if (!dniInput.trim()) {
+      setShowRegisterForm(false);
+      setRegisterName("");
+      setRegisterAddress("");
+    }
+  }, [dniInput]);
+
+  const handleSelectFinalConsumer = () => {
+    // If DNI is provided, append it to the name or keep it in the CUIT field
+    const cuitOrDni = dniInput.trim() ? dniInput.trim() : "99999999999";
+    salesStore.setClient(cuitOrDni, "Consumidor Final", "Consumidor Final");
+    setIsOpen(false);
+  };
+
+  // customer type is casted as any due to InsForge dynamic schema type
+  const handleSelectCustomer = (customer: any) => {
+    salesStore.setClient(customer.cuit, customer.razon_social, customer.condicion_iva);
+    setDniInput(""); // Clear DNI input
+    setIsOpen(false);
+  };
+
+  const handleRegisterCustomer = async () => {
+    if (!dniInput.trim()) {
+      toast.error("El DNI no puede estar vacío.");
+      return;
+    }
+    if (!registerName.trim()) {
+      toast.error("El nombre es requerido.");
+      return;
+    }
+
+    setIsRegistering(true);
+    try {
+      const client = getSupabaseClient();
+      const newCustomer = {
+        id: crypto.randomUUID(),
+        cuit: dniInput.trim(),
+        razon_social: registerName.trim(),
+        condicion_iva: "Consumidor Final",
+        direccion: registerAddress.trim() || null,
+        email: null,
+        phone: null
+      };
+
+      const { error } = await client.database
+        .from("customers")
+        .insert([newCustomer]);
+
+      if (error) throw error;
+
+      toast.success(`Cliente "${newCustomer.razon_social}" registrado con éxito.`);
+      
+      // Auto-select the newly created customer in store
+      salesStore.setClient(newCustomer.cuit, newCustomer.razon_social, newCustomer.condicion_iva);
+      
+      // Refresh the customer dropdown list
+      await salesStore.fetchCustomers();
+      
+      // Clear forms
+      setShowRegisterForm(false);
+      setRegisterName("");
+      setRegisterAddress("");
+      setDniInput("");
+    } catch (err: any) {
+      console.error("Error registering customer:", err);
+      toast.error(`Error al registrar cliente: ${err.message || "Verifique duplicación de DNI/CUIT"}`);
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const isFinalConsumer = salesStore.clientName === "Consumidor Final";
+
+  // Check if entered DNI matches a customer that already exists in the database
+  const existingCustomer = salesStore.customers.find(
+    (c) => c.cuit === dniInput.trim()
+  );
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 border-b border-zinc-850 pb-2">
+        <User className="w-4 h-4 text-amber-500" />
+        <span>Datos del Cliente & Factura</span>
+      </h2>
+
+      <div className="grid gap-3">
+        {/* Customer Selector */}
+        <div className="space-y-1 relative">
+          <label className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest">Seleccionar Cliente</label>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsOpen(!isOpen)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-850 text-xs text-white hover:border-amber-500/40 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Building2 className="w-3.5 h-3.5 text-zinc-500" />
+                <span className="font-medium truncate">
+                  {isFinalConsumer ? "Consumidor Final" : `${salesStore.clientName} (CUIT: ${salesStore.clientCuit})`}
+                </span>
+              </div>
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+            </button>
+
+            {isOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl bg-zinc-950 border border-zinc-800 shadow-2xl max-h-60 overflow-y-auto overflow-x-hidden p-1 custom-scrollbar">
+                <button
+                  onClick={handleSelectFinalConsumer}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between ${
+                    isFinalConsumer ? "bg-amber-500/10 text-amber-400" : "text-zinc-300 hover:bg-zinc-900"
+                  }`}
+                >
+                  <span className="font-bold">Consumidor Final (Sin Datos)</span>
+                  {isFinalConsumer && <Check className="w-3 h-3" />}
+                </button>
+                
+                {salesStore.customers.length > 0 && (
+                  <div className="px-2 py-1.5 mt-1 border-t border-zinc-850">
+                    <span className="text-[9px] font-bold uppercase text-zinc-600 tracking-widest">Clientes Frecuentes</span>
+                  </div>
+                )}
+                
+                {salesStore.customers.map((c) => (
+                  <button
+                    key={c.id || c.cuit}
+                    onClick={() => handleSelectCustomer(c)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between ${
+                      salesStore.clientCuit === c.cuit && !isFinalConsumer ? "bg-amber-500/10 text-amber-400" : "text-zinc-300 hover:bg-zinc-900"
+                    }`}
+                  >
+                    <div>
+                      <span className="block font-bold">{c.razon_social}</span>
+                      <span className="block text-[10px] text-zinc-500 font-mono">CUIT: {c.cuit} | {c.condicion_iva}</span>
+                    </div>
+                    {salesStore.clientCuit === c.cuit && !isFinalConsumer && <Check className="w-3 h-3" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* DNI Field for Final Consumers (Optional) */}
+        {isFinalConsumer && (
+          <div className="space-y-3 animate-fade-in">
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest flex items-center justify-between">
+                <span>DNI (Opcional)</span>
+                <span className="text-[8px] text-amber-500/70 lowercase">obligatorio &gt; $344k</span>
+              </label>
+              <input
+                type="text"
+                value={dniInput}
+                onChange={(e) => {
+                  setDniInput(e.target.value);
+                  const val = e.target.value.trim() || "99999999999";
+                  salesStore.setClient(val, "Consumidor Final", "Consumidor Final");
+                }}
+                placeholder="ej. 35123456"
+                className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-850 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/40 font-mono"
+              />
+            </div>
+
+            {/* DNI Interactive Context Box */}
+            {dniInput.trim().length >= 6 && (
+              <div className="p-3.5 rounded-xl border border-zinc-850 bg-zinc-900/20 space-y-2.5 animate-fade-in">
+                {existingCustomer ? (
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <div className="space-y-0.5">
+                      <span className="text-[9px] font-bold uppercase text-emerald-500 tracking-wider">Cliente Existente</span>
+                      <p className="font-bold text-white leading-tight">{existingCustomer.razon_social}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCustomer(existingCustomer)}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 font-extrabold text-[10px] transition-colors uppercase tracking-wider"
+                    >
+                      Seleccionar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {!showRegisterForm ? (
+                      <div className="flex items-center justify-between gap-3 text-xs">
+                        <span className="text-zinc-400 text-[10px]">Este DNI no figura como cliente frecuente.</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRegisterName("");
+                            setRegisterAddress("");
+                            setShowRegisterForm(true);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 font-extrabold text-[10px] transition-colors flex items-center gap-1.5 uppercase tracking-wider shrink-0"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>Registrar</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 animate-fade-in border-t border-zinc-850/60 pt-2.5">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest">Nombre / Razón Social</label>
+                          <input
+                            type="text"
+                            value={registerName}
+                            onChange={(e) => setRegisterName(e.target.value)}
+                            placeholder="ej. Juan Pérez"
+                            className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-amber-500/40"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest">Dirección (Opcional)</label>
+                          <input
+                            type="text"
+                            value={registerAddress}
+                            onChange={(e) => setRegisterAddress(e.target.value)}
+                            placeholder="ej. Av. Pellegrini 1500"
+                            className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-amber-500/40"
+                          />
+                        </div>
+                        <div className="flex gap-2 justify-end pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowRegisterForm(false)}
+                            className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-850 text-zinc-400 font-bold text-[10px] transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRegisterCustomer}
+                            disabled={isRegistering || !registerName.trim()}
+                            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 disabled:opacity-40 text-black font-extrabold text-[10px] transition-all flex items-center gap-1.5 uppercase tracking-wider"
+                          >
+                            {isRegistering ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <UserPlus className="w-3 h-3" />
+                            )}
+                            <span>Guardar</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Selected Voucher Indicator */}
+        <div className="space-y-1 pt-1 border-t border-zinc-900/60 mt-1">
+          <label className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest">Tipo de Comprobante Fiscal</label>
+          <div className="flex gap-2">
+            {["Factura A", "Factura B", "Factura C"].map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => salesStore.setVoucherType(type as any)}
+                className={`flex-1 py-2 text-xs font-extrabold rounded-xl border transition ${
+                  salesStore.voucherType === type
+                    ? "bg-amber-500/10 border-amber-500/30 text-amber-400 font-extrabold shadow shadow-amber-500/5"
+                    : "bg-zinc-950 border-zinc-850 text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300"
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

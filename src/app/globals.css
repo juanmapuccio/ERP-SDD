@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    
+    /* Low-Glare Dark Immersion Variables */
+    --background: #09090b;
+    --foreground: #e2e2e9;
+    --surface: #121217;
+    --surface-muted: #1a1a22;
+    --border: #1e1e24;
+    --muted-foreground: #8e8e9f;
+    --selection-bg: rgba(217, 119, 6, 0.2);
+    --selection-fg: #fbbf24;
+    
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Force dark theme for low-glare obsidian dashboard */
+  :root[data-theme="light"],
+  :root[data-theme="dark"],
+  :root {
+    color-scheme: dark;
+    --background: #09090b;
+    --foreground: #e2e2e9;
+    --surface: #121217;
+    --surface-muted: #1a1a22;
+    --border: #1e1e24;
+    --muted-foreground: #8e8e9f;
+    --selection-bg: rgba(217, 119, 6, 0.2);
+    --selection-fg: #fbbf24;
+  }
+
+  body {
+    @apply m-0 min-w-[320px] min-h-screen antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  * {
+    @apply box-border;
+    border-color: var(--border);
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+
+  ::selection {
+    background: var(--selection-bg);
+    color: var(--selection-fg);
+  }
+
+  /* Numeric values precision alignment */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Premium scrollbar styling matching Obsidian theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--background);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #1e1e24;
+    border-radius: 4px;
+    border: 2px solid var(--background);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2a2a35;
+  }
+}
