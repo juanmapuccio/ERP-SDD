@@ -31,7 +31,12 @@ export default async function OnboardingPage({
   return (
     <main className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
       <div className="w-full max-w-3xl">
-        <OnboardingClient companies={companies} userEmail={viewer.email} forceWizard={forceWizard} />
+        <OnboardingClient 
+          companies={companies} 
+          userEmail={viewer.email} 
+          userRole={viewer.role} 
+          forceWizard={forceWizard} 
+        />
       </div>
     </main>
   );

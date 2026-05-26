@@ -30,6 +30,7 @@ import { useCompanyStore } from "@/core/company/company-store";
 interface OnboardingClientProps {
   companies: CompanyProfile[];
   userEmail: string | null;
+  userRole?: string | null;
   forceWizard?: boolean;
 }
 
@@ -61,10 +62,58 @@ const DEFAULT_COMPANY_TEMPLATE = (index: number): WizardCompany => ({
   email: "",
 });
 
-export function OnboardingClient({ companies, userEmail, forceWizard }: OnboardingClientProps) {
+export function OnboardingClient({ companies, userEmail, userRole, forceWizard }: OnboardingClientProps) {
   const router = useRouter();
   const setCompanyStore = useCompanyStore((state) => state.setCompany);
   
+  // Strict check: if the user is in 'pending' status, block them and show validation view.
+  if (userRole === "pending") {
+    const whatsappNumber = "+5493413192179";
+    const message = encodeURIComponent(
+      `Hola! Acabo de registrarme en ERP Nodo Sur con el correo ${userEmail}. ¿Me habilitás el rol admin, por favor?`
+    );
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
+
+    return (
+      <div className="relative p-8 sm:p-12 rounded-2xl border border-zinc-800 bg-zinc-900/10 backdrop-blur-xl text-center space-y-6 max-w-lg mx-auto shadow-2xl">
+        {/* Glowing Orange Aura */}
+        <div className="absolute inset-0 flex items-center justify-center -z-10 pointer-events-none">
+          <div className="w-48 h-48 bg-amber-500/10 blur-[100px] rounded-full animate-pulse" />
+        </div>
+
+        <div className="mx-auto w-16 h-16 rounded-2xl border border-amber-500/25 bg-amber-500/5 flex items-center justify-center text-amber-400">
+          <Sparkles className="w-8 h-8 animate-pulse" />
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-white tracking-tight">Usuario Pendiente de Validación</h2>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            Tu cuenta con el correo <span className="text-white font-bold">{userEmail}</span> ha sido registrada con éxito, pero aún no tiene permisos activos de escritura.
+          </p>
+          <p className="text-xs text-zinc-500 leading-relaxed pt-1">
+            Por favor, solicitá la habilitación al desarrollador para que asigne tu rol de <span className="text-amber-400 font-extrabold font-mono">admin</span> en la base de datos Supabase y puedas iniciar el onboarding.
+          </p>
+        </div>
+
+        <div className="pt-4 space-y-3">
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10 hover:scale-[1.01] active:scale-97 transition-all duration-200"
+          >
+            {/* WhatsApp Logo Simil using Phone or Chat */}
+            <Phone className="w-4 h-4 fill-black" />
+            <span>Enviar mensaje por WhatsApp</span>
+          </a>
+          <p className="text-[10px] text-zinc-650">
+            Destinatario: {whatsappNumber}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Decide flow based on DB state: if no companies exist, force wizard. Otherwise, standard selection.
   const [isOnboardingFlow, setIsOnboardingFlow] = useState(!!forceWizard || companies.length === 0);
   const [localCompanies, setLocalCompanies] = useState<CompanyProfile[]>(companies);
