@@ -78,3 +78,8 @@ node_modules/
 
 # Local AI runtime state
 .atl/
+
+# Local AI IDE settings (may contain secrets/tokens)
+.gemini/settings.json
+
+.vercel
