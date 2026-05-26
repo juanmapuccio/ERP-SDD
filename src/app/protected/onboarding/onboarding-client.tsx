@@ -66,7 +66,40 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
   const router = useRouter();
   const setCompanyStore = useCompanyStore((state) => state.setCompany);
   
+  // Decide flow based on DB state: if no companies exist, force wizard. Otherwise, standard selection.
+  const [isOnboardingFlow, setIsOnboardingFlow] = useState(!!forceWizard || companies.length === 0);
+  const [localCompanies, setLocalCompanies] = useState<CompanyProfile[]>(companies);
+  const [selectedCuit, setSelectedCuit] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showStandardAddForm, setShowStandardAddForm] = useState(false);
+
+  // Wizard States
+  const [wizardStep, setWizardStep] = useState(1); // 1: CUIT Qty, 2: Forms, 3: Saving/Finished
+  const [companyCount, setCompanyCount] = useState<1 | 2 | 3>(1);
+  const [activeFormTab, setActiveFormTab] = useState(0);
+  const [wizardCompanies, setWizardCompanies] = useState<WizardCompany[]>([
+    DEFAULT_COMPANY_TEMPLATE(0),
+    DEFAULT_COMPANY_TEMPLATE(1),
+    DEFAULT_COMPANY_TEMPLATE(2),
+  ]);
+
+  // Standard Form State (for adding a company when some already exist)
+  const [standardForm, setStandardForm] = useState({
+    cuit: "",
+    razon_social: "",
+    nombre_fantasia: "",
+    condicion_iva: "Responsable Inscripto",
+    ingresos_brutos: "",
+    inicio_actividades: "",
+    direccion: "",
+    punto_venta: 1,
+    afip_mode: "edge_simulation",
+    celular: "",
+    email: "",
+  });
+
   // Strict check: if the user is in 'pending' status, block them and show validation view.
+  // Moved below React hooks to satisfy the Rules of Hooks!
   if (userRole === "pending") {
     const whatsappNumber = "+5493413192179";
     const message = encodeURIComponent(
@@ -113,38 +146,6 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
       </div>
     );
   }
-
-  // Decide flow based on DB state: if no companies exist, force wizard. Otherwise, standard selection.
-  const [isOnboardingFlow, setIsOnboardingFlow] = useState(!!forceWizard || companies.length === 0);
-  const [localCompanies, setLocalCompanies] = useState<CompanyProfile[]>(companies);
-  const [selectedCuit, setSelectedCuit] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showStandardAddForm, setShowStandardAddForm] = useState(false);
-
-  // Wizard States
-  const [wizardStep, setWizardStep] = useState(1); // 1: CUIT Qty, 2: Forms, 3: Saving/Finished
-  const [companyCount, setCompanyCount] = useState<1 | 2 | 3>(1);
-  const [activeFormTab, setActiveFormTab] = useState(0);
-  const [wizardCompanies, setWizardCompanies] = useState<WizardCompany[]>([
-    DEFAULT_COMPANY_TEMPLATE(0),
-    DEFAULT_COMPANY_TEMPLATE(1),
-    DEFAULT_COMPANY_TEMPLATE(2),
-  ]);
-
-  // Standard Form State (for adding a company when some already exist)
-  const [standardForm, setStandardForm] = useState({
-    cuit: "",
-    razon_social: "",
-    nombre_fantasia: "",
-    condicion_iva: "Responsable Inscripto",
-    ingresos_brutos: "",
-    inicio_actividades: "",
-    direccion: "",
-    punto_venta: 1,
-    afip_mode: "edge_simulation",
-    celular: "",
-    email: "",
-  });
 
   // --- Handlers for Wizard ---
   const handleWizardCuitChange = (index: number, val: string) => {
