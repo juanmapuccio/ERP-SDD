@@ -39,6 +39,7 @@ interface WizardCompany {
   razon_social: string;
   nombre_fantasia: string;
   condicion_iva: string;
+  monotributo_categoria: string;
   ingresos_brutos: string;
   inicio_actividades: string;
   direccion: string;
@@ -46,6 +47,7 @@ interface WizardCompany {
   afip_mode: string;
   celular: string;
   email: string;
+  tipo_juridico: string;
 }
 
 const DEFAULT_COMPANY_TEMPLATE = (index: number): WizardCompany => ({
@@ -53,6 +55,7 @@ const DEFAULT_COMPANY_TEMPLATE = (index: number): WizardCompany => ({
   razon_social: "",
   nombre_fantasia: "",
   condicion_iva: "Responsable Inscripto",
+  monotributo_categoria: "",
   ingresos_brutos: "",
   inicio_actividades: "",
   direccion: "",
@@ -60,6 +63,7 @@ const DEFAULT_COMPANY_TEMPLATE = (index: number): WizardCompany => ({
   afip_mode: "edge_simulation",
   celular: "",
   email: "",
+  tipo_juridico: "Unipersonal",
 });
 
 export function OnboardingClient({ companies, userEmail, userRole, forceWizard }: OnboardingClientProps) {
@@ -89,6 +93,7 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
     razon_social: "",
     nombre_fantasia: "",
     condicion_iva: "Responsable Inscripto",
+    monotributo_categoria: "",
     ingresos_brutos: "",
     inicio_actividades: "",
     direccion: "",
@@ -96,6 +101,7 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
     afip_mode: "edge_simulation",
     celular: "",
     email: "",
+    tipo_juridico: "Unipersonal",
   });
 
   // Strict check: if the user is in 'pending' status, block them and show validation view.
@@ -171,12 +177,14 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
 
   const isFormTabValid = (index: number) => {
     const comp = wizardCompanies[index];
+    const isMonotributoValid = comp.condicion_iva !== "Monotributista" || comp.monotributo_categoria !== "";
     return (
       comp.cuit.length === 11 &&
       comp.razon_social.trim().length > 0 &&
       comp.direccion.trim().length > 0 &&
       comp.celular.trim().length > 0 &&
-      validateEmail(comp.email.trim())
+      validateEmail(comp.email.trim()) &&
+      isMonotributoValid
     );
   };
 
@@ -206,7 +214,8 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
           cuit: comp.cuit,
           razon_social: comp.razon_social.trim(),
           nombre_fantasia: comp.nombre_fantasia.trim() || null,
-          condicion_iva: comp.condicion_iva,
+          condicion_iva: comp.condicion_iva === "Autonomo" ? "Responsable Inscripto" : comp.condicion_iva,
+          monotributo_categoria: comp.condicion_iva === "Monotributista" ? comp.monotributo_categoria : null,
           ingresos_brutos: comp.ingresos_brutos.trim() || null,
           inicio_actividades: comp.inicio_actividades.trim() || null,
           direccion: comp.direccion.trim(),
@@ -214,6 +223,7 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
           afip_mode: comp.afip_mode || "edge_simulation",
           celular: comp.celular.trim(),
           email: comp.email.trim(),
+          tipo_juridico: comp.tipo_juridico || "Unipersonal",
         };
 
         const result = await createCompanyAction(profile);
@@ -277,10 +287,23 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setStandardForm((prev) => ({
-      ...prev,
-      [name]: name === "punto_venta" ? Number(value) || 1 : value,
-    }));
+    setStandardForm((prev) => {
+      const updated = {
+        ...prev,
+        [name]: name === "punto_venta" ? Number(value) || 1 : value,
+      };
+      if (name === "condicion_iva") {
+        if (value !== "Monotributista") {
+          updated.monotributo_categoria = "";
+        } else if (!updated.monotributo_categoria) {
+          updated.monotributo_categoria = "A";
+        }
+        if (value === "Monotributista" || value === "Autonomo") {
+          updated.tipo_juridico = "Unipersonal";
+        }
+      }
+      return updated;
+    });
   };
 
   const handleStandardSubmit = async (e: React.FormEvent) => {
@@ -306,14 +329,20 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
       return;
     }
 
+    if (standardForm.condicion_iva === "Monotributista" && !standardForm.monotributo_categoria) {
+      toast.error("Por favor, selecciona una categoría de Monotributo.");
+      return;
+    }
+
     setLoading(true);
-    toast.info("Registrando perfil de empresa en InsForge...");
+    toast.info("Registrando perfil de empresa...");
 
     const companyToSave: CompanyProfile = {
       cuit: standardForm.cuit,
       razon_social: standardForm.razon_social.trim(),
       nombre_fantasia: standardForm.nombre_fantasia.trim() || null,
-      condicion_iva: standardForm.condicion_iva,
+      condicion_iva: standardForm.condicion_iva === "Autonomo" ? "Responsable Inscripto" : standardForm.condicion_iva,
+      monotributo_categoria: standardForm.condicion_iva === "Monotributista" ? standardForm.monotributo_categoria : null,
       ingresos_brutos: standardForm.ingresos_brutos.trim() || null,
       inicio_actividades: standardForm.inicio_actividades.trim() || null,
       direccion: standardForm.direccion.trim(),
@@ -321,6 +350,7 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
       afip_mode: standardForm.afip_mode || "edge_simulation",
       celular: standardForm.celular.trim(),
       email: standardForm.email.trim(),
+      tipo_juridico: standardForm.tipo_juridico || "Unipersonal",
     };
 
     const result = await createCompanyAction(companyToSave);
@@ -335,6 +365,7 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
         razon_social: "",
         nombre_fantasia: "",
         condicion_iva: "Responsable Inscripto",
+        monotributo_categoria: "",
         ingresos_brutos: "",
         inicio_actividades: "",
         direccion: "",
@@ -342,6 +373,7 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
         afip_mode: "edge_simulation",
         celular: "",
         email: "",
+        tipo_juridico: "Unipersonal",
       });
 
       setShowStandardAddForm(false);
@@ -558,6 +590,102 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-850 bg-zinc-950/60 text-white placeholder-zinc-700 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 focus:outline-none transition-all duration-300"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      Condición IVA <span className="text-amber-500">*</span>
+                    </label>
+                    <div className="relative mt-1.5">
+                      <BadgePercent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                      <select
+                        value={wizardCompanies[activeFormTab].condicion_iva}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          handleWizardInputChange(activeFormTab, "condicion_iva", val);
+                          if (val !== "Monotributista") {
+                            handleWizardInputChange(activeFormTab, "monotributo_categoria", "");
+                          } else {
+                            handleWizardInputChange(activeFormTab, "monotributo_categoria", "A");
+                          }
+                          if (val === "Monotributista" || val === "Autonomo") {
+                            handleWizardInputChange(activeFormTab, "tipo_juridico", "Unipersonal");
+                          }
+                        }}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-850 bg-zinc-950 text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 focus:outline-none transition-all duration-300 appearance-none"
+                      >
+                        <option value="Responsable Inscripto">Responsable Inscripto</option>
+                        <option value="Monotributista">Monotributista</option>
+                        <option value="Autonomo">Autónomo (Régimen General)</option>
+                        <option value="Exento">Sujeto Exento</option>
+                        <option value="No Alcanzado">IVA No Alcanzado</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {wizardCompanies[activeFormTab].condicion_iva === "Monotributista" && (
+                    <div className="space-y-1.5 animate-fade-in">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
+                        Categoría de Monotributo <span className="text-amber-500">*</span>
+                      </label>
+                      <div className="relative mt-1.5">
+                        <select
+                          value={wizardCompanies[activeFormTab].monotributo_categoria}
+                          onChange={(e) => handleWizardInputChange(activeFormTab, "monotributo_categoria", e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl border border-zinc-850 bg-zinc-950 text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 focus:outline-none transition-all duration-300 appearance-none"
+                        >
+                          <option value="A">Categoría A (Límite: $6.45M anuales)</option>
+                          <option value="B">Categoría B (Límite: $9.64M anuales)</option>
+                          <option value="C">Categoría C (Límite: $13.20M anuales)</option>
+                          <option value="D">Categoría D (Límite: $16.40M anuales)</option>
+                          <option value="E">Categoría E (Límite: $19.30M anuales)</option>
+                          <option value="F">Categoría F (Límite: $24.20M anuales)</option>
+                          <option value="G">Categoría G (Límite: $29.00M anuales)</option>
+                          <option value="H">Categoría H (Límite: $44.00M anuales)</option>
+                          <option value="I">Categoría I (Límite: $49.20M anuales)</option>
+                          <option value="J">Categoría J (Límite: $56.40M anuales)</option>
+                          <option value="K">Categoría K (Límite: $68.00M anuales)</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {wizardCompanies[activeFormTab].condicion_iva === "Autonomo" && (
+                    <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 text-[11px] text-amber-400 font-semibold animate-fade-in leading-relaxed">
+                      💡 <strong>Aviso de ARCA:</strong> Los Autónomos facturan fiscalmente bajo la condición de <strong>Responsable Inscripto</strong> (Facturas A y B). El sistema autoconfigurará tu entorno bajo esta condición fiscal.
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      Forma Jurídica / Tipo Societario <span className="text-amber-500">*</span>
+                    </label>
+                    <div className="relative mt-1.5">
+                      <Landmark className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                      <select
+                        value={wizardCompanies[activeFormTab].tipo_juridico || "Unipersonal"}
+                        disabled={wizardCompanies[activeFormTab].condicion_iva === "Monotributista" || wizardCompanies[activeFormTab].condicion_iva === "Autonomo"}
+                        onChange={(e) => handleWizardInputChange(activeFormTab, "tipo_juridico", e.target.value)}
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-855 bg-zinc-950 text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 focus:outline-none transition-all duration-300 appearance-none ${
+                          (wizardCompanies[activeFormTab].condicion_iva === "Monotributista" || wizardCompanies[activeFormTab].condicion_iva === "Autonomo")
+                            ? "opacity-60 cursor-not-allowed border-zinc-800 bg-zinc-900/50"
+                            : ""
+                        }`}
+                      >
+                        <option value="Unipersonal">Persona Humana / Unipersonal</option>
+                        <option value="S.R.L.">Sociedad de Responsabilidad Limitada (S.R.L.)</option>
+                        <option value="S.A.">Sociedad Anónima (S.A.)</option>
+                        <option value="S.A.S.">Sociedad por Acciones Simplificada (S.A.S.)</option>
+                        <option value="S.H.">Sociedad de Hecho (S.H.)</option>
+                      </select>
+                    </div>
+                    {(wizardCompanies[activeFormTab].condicion_iva === "Monotributista" || wizardCompanies[activeFormTab].condicion_iva === "Autonomo") && (
+                      <div className="mt-1.5 p-2 rounded-lg bg-zinc-800/40 border border-zinc-700/50 text-[10px] text-zinc-400">
+                        {wizardCompanies[activeFormTab].condicion_iva === "Monotributista" 
+                          ? "El Régimen Simplificado (Monotributo) requiere obligatoriamente tipo societario Unipersonal." 
+                          : "Los Autónomos ejercen la actividad comercial a título personal (Unipersonal)."}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -804,13 +932,82 @@ export function OnboardingClient({ companies, userEmail, userRole, forceWizard }
                     name="condicion_iva"
                     value={standardForm.condicion_iva}
                     onChange={handleStandardInputChange}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-805 bg-zinc-950 text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 focus:outline-none transition-all duration-300 appearance-none"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-805 bg-zinc-955 text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 focus:outline-none transition-all duration-300 appearance-none"
                   >
                     <option value="Responsable Inscripto">Responsable Inscripto</option>
                     <option value="Monotributista">Monotributista</option>
-                    <option value="Exento">Exento</option>
+                    <option value="Autonomo">Autónomo (Régimen General)</option>
+                    <option value="Exento">Sujeto Exento</option>
+                    <option value="No Alcanzado">IVA No Alcanzado</option>
                   </select>
                 </div>
+              </div>
+
+              {standardForm.condicion_iva === "Monotributista" && (
+                <div className="space-y-1.5 animate-fade-in">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
+                    Categoría de Monotributo <span className="text-amber-500">*</span>
+                  </label>
+                  <div className="relative mt-1.5">
+                    <select
+                      name="monotributo_categoria"
+                      value={standardForm.monotributo_categoria}
+                      onChange={handleStandardInputChange}
+                      className="w-full px-4 py-3 rounded-xl border border-zinc-850 bg-zinc-950 text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 focus:outline-none transition-all duration-300 appearance-none"
+                    >
+                      <option value="A">Categoría A (Límite: $6.45M anuales)</option>
+                      <option value="B">Categoría B (Límite: $9.64M anuales)</option>
+                      <option value="C">Categoría C (Límite: $13.20M anuales)</option>
+                      <option value="D">Categoría D (Límite: $16.40M anuales)</option>
+                      <option value="E">Categoría E (Límite: $19.30M anuales)</option>
+                      <option value="F">Categoría F (Límite: $24.20M anuales)</option>
+                      <option value="G">Categoría G (Límite: $29.00M anuales)</option>
+                      <option value="H">Categoría H (Límite: $44.00M anuales)</option>
+                      <option value="I">Categoría I (Límite: $49.20M anuales)</option>
+                      <option value="J">Categoría J (Límite: $56.40M anuales)</option>
+                      <option value="K">Categoría K (Límite: $68.00M anuales)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {standardForm.condicion_iva === "Autonomo" && (
+                <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 text-[11px] text-amber-400 font-semibold animate-fade-in leading-relaxed">
+                  💡 <strong>Aviso de ARCA:</strong> Los Autónomos facturan fiscalmente bajo la condición de <strong>Responsable Inscripto</strong> (Facturas A y B). El sistema autoconfigurará tu entorno bajo esta condición fiscal.
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
+                  Forma Jurídica / Tipo Societario <span className="text-amber-500">*</span>
+                </label>
+                <div className="relative mt-1.5">
+                  <Landmark className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <select
+                    name="tipo_juridico"
+                    value={standardForm.tipo_juridico || "Unipersonal"}
+                    disabled={standardForm.condicion_iva === "Monotributista" || standardForm.condicion_iva === "Autonomo"}
+                    onChange={handleStandardInputChange}
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-800 bg-zinc-950 text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 focus:outline-none transition-all duration-300 appearance-none ${
+                      (standardForm.condicion_iva === "Monotributista" || standardForm.condicion_iva === "Autonomo")
+                        ? "opacity-60 cursor-not-allowed border-zinc-800 bg-zinc-900/50"
+                        : ""
+                    }`}
+                  >
+                    <option value="Unipersonal">Persona Humana / Unipersonal</option>
+                    <option value="S.R.L.">Sociedad de Responsabilidad Limitada (S.R.L.)</option>
+                    <option value="S.A.">Sociedad Anónima (S.A.)</option>
+                    <option value="S.A.S.">Sociedad por Acciones Simplificada (S.A.S.)</option>
+                    <option value="S.H.">Sociedad de Hecho (S.H.)</option>
+                  </select>
+                </div>
+                {(standardForm.condicion_iva === "Monotributista" || standardForm.condicion_iva === "Autonomo") && (
+                  <div className="mt-1.5 p-2 rounded-lg bg-zinc-800/40 border border-zinc-700/50 text-[10px] text-zinc-400">
+                    {standardForm.condicion_iva === "Monotributista" 
+                      ? "El Régimen Simplificado (Monotributo) requiere obligatoriamente tipo societario Unipersonal." 
+                      : "Los Autónomos ejercen la actividad comercial a título personal (Unipersonal)."}
+                  </div>
+                )}
               </div>
             </div>
 

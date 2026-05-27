@@ -5,6 +5,7 @@ export interface CompanyProfile {
   razon_social: string;
   nombre_fantasia: string | null;
   condicion_iva: string;
+  monotributo_categoria?: string | null;
   ingresos_brutos: string | null;
   inicio_actividades: string | null;
   direccion: string | null;
@@ -12,6 +13,7 @@ export interface CompanyProfile {
   afip_mode: string | null;
   celular: string | null;
   email: string | null;
+  tipo_juridico?: string | null;
 }
 
 interface CompanyState {

@@ -31,6 +31,8 @@ export function ArcaSettingsManager({ activeCompany, arcaCred }: ArcaSettingsMan
   const [puntoVenta, setPuntoVenta] = useState(activeCompany.punto_venta?.toString() || "1");
   const [ingresosBrutos, setIngresosBrutos] = useState(activeCompany.ingresos_brutos || "");
   const [condicionIva, setCondicionIva] = useState(activeCompany.condicion_iva || "Responsable Inscripto");
+  const [monotributoCategoria, setMonotributoCategoria] = useState(activeCompany.monotributo_categoria || "");
+  const [tipoJuridico, setTipoJuridico] = useState(activeCompany.tipo_juridico || "Unipersonal");
   
   // UX states
   const [activeTab, setActiveTab] = useState<"bypass" | "official">("bypass");
@@ -49,6 +51,13 @@ export function ArcaSettingsManager({ activeCompany, arcaCred }: ArcaSettingsMan
     e.preventDefault();
     setSaving(true);
     setMessage(null);
+
+    const isMonotributista = condicionIva === "Monotributista" || condicionIva === "Monotributo";
+    if (isMonotributista && !monotributoCategoria) {
+      setMessage({ type: "error", text: "Por favor, selecciona una categoría de Monotributo." });
+      setSaving(false);
+      return;
+    }
     
     try {
       const res = await updateCompanyAction({
@@ -57,7 +66,9 @@ export function ArcaSettingsManager({ activeCompany, arcaCred }: ArcaSettingsMan
         nombre_fantasia: nombreFantasia || null,
         punto_venta: Number(puntoVenta) || 1,
         ingresos_brutos: ingresosBrutos || null,
-        condicion_iva: condicionIva
+        condicion_iva: condicionIva === "Autonomo" ? "Responsable Inscripto" : (condicionIva === "Monotributo" ? "Monotributista" : condicionIva),
+        monotributo_categoria: isMonotributista ? monotributoCategoria : null,
+        tipo_juridico: tipoJuridico
       });
 
       if (!res.success) {
@@ -165,15 +176,85 @@ export function ArcaSettingsManager({ activeCompany, arcaCred }: ArcaSettingsMan
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Condición de IVA</label>
                   <select
-                    value={condicionIva}
-                    onChange={(e) => setCondicionIva(e.target.value)}
+                    value={condicionIva === "Monotributo" ? "Monotributista" : condicionIva}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCondicionIva(val);
+                      if (val !== "Monotributista") {
+                        setMonotributoCategoria("");
+                      } else if (!monotributoCategoria) {
+                        setMonotributoCategoria("A");
+                      }
+                      if (val === "Monotributista" || val === "Autonomo") {
+                        setTipoJuridico("Unipersonal");
+                      }
+                    }}
                     className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-sm text-zinc-100 focus:border-amber-500/50 focus:outline-none transition-colors"
                   >
                     <option value="Responsable Inscripto">Responsable Inscripto</option>
-                    <option value="Monotributo">Monotributo</option>
-                    <option value="Exento">Exento</option>
+                    <option value="Monotributista">Monotributista</option>
+                    <option value="Autonomo">Autónomo (Régimen General)</option>
+                    <option value="Exento">Sujeto Exento</option>
+                    <option value="No Alcanzado">IVA No Alcanzado</option>
                   </select>
                 </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Forma Jurídica / Tipo Societario</label>
+                  <select
+                    value={tipoJuridico || "Unipersonal"}
+                    disabled={condicionIva === "Monotributista" || condicionIva === "Monotributo" || condicionIva === "Autonomo"}
+                    onChange={(e) => setTipoJuridico(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-sm text-zinc-100 focus:border-amber-500/50 focus:outline-none transition-colors ${
+                      (condicionIva === "Monotributista" || condicionIva === "Monotributo" || condicionIva === "Autonomo")
+                        ? "opacity-60 cursor-not-allowed bg-zinc-900/40 border-zinc-850"
+                        : ""
+                    }`}
+                  >
+                    <option value="Unipersonal">Persona Humana / Unipersonal</option>
+                    <option value="S.R.L.">Sociedad de Responsabilidad Limitada (S.R.L.)</option>
+                    <option value="S.A.">Sociedad Anónima (S.A.)</option>
+                    <option value="S.A.S.">Sociedad por Acciones Simplificada (S.A.S.)</option>
+                    <option value="S.H.">Sociedad de Hecho (S.H.)</option>
+                  </select>
+                  {(condicionIva === "Monotributista" || condicionIva === "Monotributo" || condicionIva === "Autonomo") && (
+                    <p className="text-[10px] text-zinc-550 leading-tight select-none">
+                      {condicionIva === "Autonomo" 
+                        ? "Autónomos ejercen a título personal (Persona Humana / Unipersonal)."
+                        : "Régimen Simplificado (Monotributo) requiere obligatoriamente tipo societario Unipersonal."}
+                    </p>
+                  )}
+                </div>
+
+                {/* Monotributo Categoria Desplegable Dinámico */}
+                {(condicionIva === "Monotributista" || condicionIva === "Monotributo") && (
+                  <div className="space-y-1.5 animate-fade-in">
+                    <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Categoría de Monotributo</label>
+                    <select
+                      value={monotributoCategoria}
+                      onChange={(e) => setMonotributoCategoria(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-sm text-zinc-100 focus:border-amber-500/50 focus:outline-none transition-colors font-mono"
+                    >
+                      <option value="A">Categoría A (Límite: $6.45M anuales)</option>
+                      <option value="B">Categoría B (Límite: $9.64M anuales)</option>
+                      <option value="C">Categoría C (Límite: $13.20M anuales)</option>
+                      <option value="D">Categoría D (Límite: $16.40M anuales)</option>
+                      <option value="E">Categoría E (Límite: $19.30M anuales)</option>
+                      <option value="F">Categoría F (Límite: $24.20M anuales)</option>
+                      <option value="G">Categoría G (Límite: $29.00M anuales)</option>
+                      <option value="H">Categoría H (Límite: $44.00M anuales)</option>
+                      <option value="I">Categoría I (Límite: $49.20M anuales)</option>
+                      <option value="J">Categoría J (Límite: $56.40M anuales)</option>
+                      <option value="K">Categoría K (Límite: $68.00M anuales)</option>
+                    </select>
+                  </div>
+                )}
+
+                {condicionIva === "Autonomo" && (
+                  <div className="sm:col-span-2 p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 text-[11px] text-amber-400 font-semibold animate-fade-in leading-relaxed select-none">
+                    💡 <strong>Aviso de ARCA:</strong> Los Autónomos facturan fiscalmente bajo la condición de <strong>Responsable Inscripto</strong> (Facturas A y B). El sistema autoconfigurará tu entorno bajo esta condición fiscal.
+                  </div>
+                )}
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Punto de Venta Fiscal</label>

@@ -6,7 +6,7 @@
 ## Proyecto
 
 **ERP Nodo Sur** — Sistema de gestión para distribuidoras de autopartes argentinas.
-Stack: Next.js 16 + React 19 + TypeScript + Bun + TailwindCSS v3.4 / Supabase (Postgres)
+Stack: Next.js 15.5 + React 19 + TypeScript + Bun + TailwindCSS v3.4 / Supabase (Postgres)
 Backend: Supabase (Serverless nativo)
 
 ---
@@ -39,6 +39,7 @@ Backend: Supabase (Serverless nativo)
 
 ## Reglas de Negocio Críticas
 
+- **Supabase Nativo (Deprecación de InsForge)**: `InsForge` está 100% deprecado y deshabilitado del proyecto. Se debe interactuar única y exclusivamente con Supabase Nativo (`@supabase/ssr` en el servidor y `@supabase/supabase-js` en el cliente). Queda estrictamente PROHIBIDO importar o invocar `@insforge/sdk` o intentar usar `@/core/api/insforge`.
 - **AFIP / Facturación**: `afip_mode = edge_simulation` en desarrollo; no activar cert real sin aprobación explícita.
 - **Items facturados**: una vez guardados en `afip_vouchers.items` (JSONB), son INMUTABLES. No editar histórico.
 - **Stock**: descuento de `articulo.stock_actual` siempre atómico con la confirmación de venta.

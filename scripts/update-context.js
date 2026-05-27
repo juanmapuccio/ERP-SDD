@@ -130,6 +130,7 @@ async function updateContext() {
 {
   "id": "text (UUID de Auth, PK)",
   "email": "text (unique)",
+  "role": "user_role (ENUM: pending, vendedor, admin)",
   "profile": "jsonb",
   "metadata": "jsonb",
   "created_at": "timestamp",
@@ -144,6 +145,7 @@ async function updateContext() {
   "razon_social": "text",
   "nombre_fantasia": "text",
   "condicion_iva": "text",
+  "monotributo_categoria": "text (ENUM: A-K, nullable)",
   "ingresos_brutos": "text",
   "inicio_actividades": "text",
   "direccion": "text",

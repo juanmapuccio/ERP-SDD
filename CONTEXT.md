@@ -5,14 +5,14 @@
 ## 🌐 Información del Backend
 
 - **URL Base**: `https://xrmhsluabxlrdfgqajwj.supabase.co`
-- **Fecha de Actualización**: 24/5/2026, 09:11:09 (ARG)
+- **Fecha de Actualización**: 26/5/2026, 08:33:49 (ARG)
 
 ## 📊 Estado de las Tablas y Registros (Supabase Live)
 
 | Tabla | Descripción | Registros | RLS |
 | :--- | :--- | :---: | :---: |
 | `users` | Perfiles de usuario de Supabase Auth | `0` | Activo (RLS Habilitado) |
-| `company_profile` | Perfiles fiscales de las empresas registradas | `0` | Activo (RLS Habilitado) |
+| `company_profile` | Perfiles fiscales de las empresas registradas | `2` | Activo (RLS Habilitado) |
 | `customers` | Clientes y proveedores del ERP | `0` | Activo (RLS Habilitado) |
 | `inventory` | Catálogo de inventario (esquema heredado) | `0` | Activo (RLS Habilitado) |
 | `articulo` | Catálogo de autopartes principal | `0` | Activo (RLS Habilitado) |
@@ -41,6 +41,7 @@
 {
   "id": "text (UUID de Auth, PK)",
   "email": "text (unique)",
+  "role": "user_role (ENUM: pending, vendedor, admin)",
   "profile": "jsonb",
   "metadata": "jsonb",
   "created_at": "timestamp",
@@ -55,6 +56,7 @@
   "razon_social": "text",
   "nombre_fantasia": "text",
   "condicion_iva": "text",
+  "monotributo_categoria": "text (ENUM: A-K, nullable)",
   "ingresos_brutos": "text",
   "inicio_actividades": "text",
   "direccion": "text",

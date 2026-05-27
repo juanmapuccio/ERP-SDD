@@ -86,6 +86,7 @@ export async function createCompanyAction(company: CompanyProfile): Promise<{ su
           razon_social: company.razon_social,
           nombre_fantasia: company.nombre_fantasia || null,
           condicion_iva: company.condicion_iva,
+          monotributo_categoria: company.monotributo_categoria || null,
           ingresos_brutos: company.ingresos_brutos || null,
           inicio_actividades: company.inicio_actividades || null,
           direccion: company.direccion || null,
@@ -93,6 +94,7 @@ export async function createCompanyAction(company: CompanyProfile): Promise<{ su
           afip_mode: company.afip_mode || "edge_simulation",
           celular: company.celular || null,
           email: company.email || null,
+          tipo_juridico: company.tipo_juridico || "Unipersonal",
         }
       ])
       .select();
@@ -134,6 +136,7 @@ export async function updateCompanyAction(company: Partial<CompanyProfile> & { c
         razon_social: company.razon_social,
         nombre_fantasia: company.nombre_fantasia || null,
         condicion_iva: company.condicion_iva,
+        monotributo_categoria: company.monotributo_categoria !== undefined ? company.monotributo_categoria || null : undefined,
         ingresos_brutos: company.ingresos_brutos || null,
         inicio_actividades: company.inicio_actividades || null,
         direccion: company.direccion || null,
@@ -141,6 +144,7 @@ export async function updateCompanyAction(company: Partial<CompanyProfile> & { c
         afip_mode: company.afip_mode,
         celular: company.celular !== undefined ? company.celular || null : undefined,
         email: company.email !== undefined ? company.email || null : undefined,
+        tipo_juridico: company.tipo_juridico !== undefined ? company.tipo_juridico || null : undefined,
       })
       .eq("cuit", company.cuit)
       .select();

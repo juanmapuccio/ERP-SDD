@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  Key, 
-  Download, 
-  Upload, 
-  CheckCircle, 
-  Terminal, 
-  Loader2, 
-  AlertTriangle, 
-  ChevronRight, 
+import {
+  Key,
+  Download,
+  Upload,
+  CheckCircle,
+  Terminal,
+  Loader2,
+  AlertTriangle,
+  ChevronRight,
   ChevronLeft,
   X,
   FileText,
@@ -32,7 +32,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
   const [razonSocial, setRazonSocial] = useState(initialRazonSocial ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // States to hold the output files
   const [csrText, setCsrText] = useState<string | null>(null);
   const [uploadedCert, setUploadedCert] = useState<string>("");
@@ -52,7 +52,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFile(e.dataTransfer.files[0]);
     }
@@ -79,7 +79,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
     };
     reader.readAsText(file);
   };
-  
+
   // Real-time console logs inside the wizard
   const [consoleLogs, setConsoleLogs] = useState<string[]>([
     "💡 Asistente inicializado. Listo para configurar credenciales fiscales ARCA."
@@ -108,7 +108,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
     setLoading(true);
     setError(null);
     addLog(`Iniciando generación de par de claves RSA de 2048 bits para CUIT ${cuit}...`);
-    
+
     try {
       const response = await fetch("/api/config/arca/generate-csr", {
         method: "POST",
@@ -119,19 +119,19 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
           punto_venta: Number(puntoVenta) || 1
         })
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || "Falla al generar CSR.");
       }
-      
+
       setCsrText(result.csr);
       addLog("✅ Clave privada RSA 2048-bits generada con éxito.");
       addLog("🔒 Clave privada encriptada localmente mediante AES-256-GCM.");
       addLog("💾 Credenciales pendientes guardadas de forma segura en InsForge.");
       addLog("📄 Certificate Signing Request (CSR) compilado correctamente.");
-      
+
       setStep(3); // Advance to Step 3 (Download & Instructions)
     } catch (err: any) {
       setError(err.message || "Falla crítica al inicializar claves.");
@@ -145,7 +145,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
   const handleDownloadCsr = () => {
     if (!csrText) return;
     addLog("Descargando archivo Certificate Signing Request (CSR)...");
-    
+
     const blob = new Blob([csrText], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -154,7 +154,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     addLog("💾 Archivo .csr guardado en tu dispositivo.");
   };
 
@@ -164,11 +164,11 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
       setError("Por favor pegue el contenido de su certificado digital (.crt).");
       return;
     }
-    
+
     setLoading(true);
     setError(null);
     addLog("Subiendo certificado digital digitalmente firmado (.crt) a InsForge...");
-    
+
     try {
       const response = await fetch("/api/config/arca/upload-certificate", {
         method: "POST",
@@ -179,16 +179,16 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
           punto_venta: Number(puntoVenta) || 1
         })
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || "Falla al subir certificado.");
       }
-      
+
       addLog("✅ Certificado digital subido e indexado con éxito.");
       addLog(`🚀 Módulo ARCA activado en modo simulación para el Punto de Venta ${puntoVenta}.`);
-      
+
       setStep(5); // Advance to Success page
     } catch (err: any) {
       setError(err.message || "Falla crítica al asociar certificado.");
@@ -204,7 +204,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
     setLoading(true);
     setTestResult(null);
     addLog("Iniciando prueba de conexión al simulador local de ARCA WSFE...");
-    
+
     try {
       const payload = {
         tipo_cbte: 6, // Factura B
@@ -217,7 +217,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
           { id: 5, base_imp: 826.45, importe: 173.55 }
         ]
       };
-      
+
       const response = await fetch("/api/arca-simulator/wsfe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -233,13 +233,13 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
           iva_alicuotas: payload.iva_alicuotas
         })
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || "Error al emular factura.");
       }
-      
+
       setTestResult(`CAE Autorizado: ${result.cae} (Vence: ${new Date(result.cae_vencimiento).toLocaleDateString()}) - Comprobante Nro: ${result.cbte_nro}`);
       addLog("✅ Conexión con WSFE exitosa. El simulador respondió en 12ms.");
       addLog(`📄 CAE emitido: ${result.cae}`);
@@ -262,7 +262,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
 
   return (
     <>
-      <button 
+      <button
         onClick={handleStartOnboarding}
         className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-xs font-bold text-black transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/10 active:scale-95"
       >
@@ -274,7 +274,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-md animate-fade-in">
           {/* Main Wizard Container with elegant Glassmorphism border and Amber shadow */}
           <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/90 shadow-2xl shadow-amber-500/5 max-h-[90vh] flex flex-col">
-            
+
             {/* Header */}
             <div className="flex items-center justify-between border-b border-zinc-800/80 p-5 bg-zinc-900/40">
               <div className="flex items-center gap-2">
@@ -285,14 +285,14 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
                   <h3 className="text-base font-bold text-white">Asistente de Onboarding ARCA</h3>
                   <p className="text-xs text-zinc-400">Paso {step} de 5: {
                     step === 1 ? "Inicializar Datos" :
-                    step === 2 ? "Generación de Par de Claves" :
-                    step === 3 ? "Descarga de CSR y Delegación" :
-                    step === 4 ? "Cargar Certificado Digital" :
-                    "Configuración Completada"
+                      step === 2 ? "Generación de Par de Claves" :
+                        step === 3 ? "Descarga de CSR y Delegación" :
+                          step === 4 ? "Cargar Certificado Digital" :
+                            "Configuración Completada"
                   }</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsOpen(false)}
                 className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
               >
@@ -304,19 +304,17 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
             <div className="flex px-5 py-3 bg-zinc-900/20 border-b border-zinc-800/40 justify-between items-center text-xs">
               {[1, 2, 3, 4, 5].map((num) => (
                 <div key={num} className="flex items-center">
-                  <div className={`flex items-center justify-center w-6 h-6 rounded-full border font-bold ${
-                    step === num 
-                      ? "bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/20" 
+                  <div className={`flex items-center justify-center w-6 h-6 rounded-full border font-bold ${step === num
+                      ? "bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/20"
                       : step > num
-                      ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                      : "bg-zinc-950 border-zinc-850 text-zinc-500"
-                  }`}>
+                        ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                        : "bg-zinc-950 border-zinc-850 text-zinc-500"
+                    }`}>
                     {step > num ? <CheckCircle className="w-4 h-4" /> : num}
                   </div>
                   {num < 5 && (
-                    <div className={`w-8 sm:w-16 h-0.5 mx-1.5 ${
-                      step > num ? "bg-amber-500/30" : "bg-zinc-800"
-                    }`} />
+                    <div className={`w-8 sm:w-16 h-0.5 mx-1.5 ${step > num ? "bg-amber-500/30" : "bg-zinc-800"
+                      }`} />
                   )}
                 </div>
               ))}
@@ -340,7 +338,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
                   <p className="text-xs text-zinc-400 leading-relaxed">
                     Ingrese el CUIT fiscal de la empresa distribuidora y el Punto de Venta habilitado en ARCA. El sistema utilizará estos valores para compilar el archivo CSR con estándar de firma criptográfica RSA 2048.
                   </p>
-                  
+
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
@@ -466,7 +464,7 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
                         Ingresa al <a href="https://auth.afip.gob.ar/contribuyente_/login.xhtml" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline font-bold">Portal de AFIP Oficial</a> con tu Clave Fiscal (Nivel 3).
                       </li>
                       <li>Accede al servicio <span className="text-white font-semibold">Administración de Certificados Digitales</span> (si no lo tienes, debes adherirlo desde el Administrador de Relaciones).</li>
-                      <li>Agrega una nueva clave o alias para ZenERP y carga el archivo <span className="text-amber-400 font-mono font-bold">.csr</span> que acabas de descargar.</li>
+                      <li>Agrega una nueva clave o alias para tu software y carga el archivo <span className="text-amber-400 font-mono font-bold">.csr</span> que acabas de descargar.</li>
                       <li>Descarga el certificado digital en formato <span className="text-white font-semibold font-bold">.crt</span> generado por AFIP.</li>
                       <li>(Opcional) Realiza la delegación del servicio de <span className="text-white font-semibold">Facturación Electrónica (WSFE)</span> a este nuevo alias en el portal de AFIP.</li>
                     </ol>
@@ -487,11 +485,10 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
                     onDragOver={handleDrag}
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
-                    className={`relative border-2 border-dashed rounded-xl p-6 transition-all flex flex-col items-center justify-center text-center cursor-pointer ${
-                      isDragActive
+                    className={`relative border-2 border-dashed rounded-xl p-6 transition-all flex flex-col items-center justify-center text-center cursor-pointer ${isDragActive
                         ? "border-amber-500 bg-amber-500/5 text-amber-400"
                         : "border-zinc-800 bg-zinc-950/40 hover:border-zinc-700 text-zinc-400"
-                    }`}
+                      }`}
                   >
                     <input
                       type="file"
@@ -583,11 +580,10 @@ export function OnboardingWizard({ initialCuit, initialPuntoVenta, initialRazonS
                     </button>
 
                     {testResult && (
-                      <div className={`p-3 rounded-lg border text-xs leading-normal font-mono break-all ${
-                        testResult.startsWith("Falla")
+                      <div className={`p-3 rounded-lg border text-xs leading-normal font-mono break-all ${testResult.startsWith("Falla")
                           ? "bg-red-500/5 border-red-500/20 text-red-400"
                           : "bg-green-500/5 border-green-500/20 text-green-400"
-                      }`}>
+                        }`}>
                         {testResult}
                       </div>
                     )}
